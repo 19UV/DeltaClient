@@ -37,6 +37,7 @@ int RecvBuffer::read(uint8_t* value) {
         return 1;
     }
 
+
     *value = *(this->read_ptr++);
     
     if(this->read_ptr == this->buffer_end) {
@@ -66,6 +67,20 @@ int RecvBuffer::getUsed() {
 }
 int RecvBuffer::getFree() { return this->buffer_size - this->getUsed(); }
 
+bool RecvBuffer::isFullPacket() {
+    int32_t packet_length;
+    int res = this->readVarInt(&packet_length, false);
+    if(res < 0) { return false; }
+    packet_length += (int32_t)res;
+
+    int32_t used = (int32_t)this->getUsed();
+
+    if(packet_length > used) {
+        return false;
+    }
+
+    return true;
+}
 int RecvBuffer::recv(unsigned int* amount_read) {
     if((this->read_ptr == this->write_ptr) && this->filled) {
         *amount_read = 0;
@@ -104,3 +119,48 @@ int RecvBuffer::recv(unsigned int* amount_read) {
     return 0;
 }
 
+int RecvBuffer::readVarInt(int32_t* value) { return this->readVarInt(value, true); }
+int RecvBuffer::readVarInt(int32_t* value, bool mutate) {
+    uint8_t* old = this->read_ptr;
+
+    unsigned int numRead = 0;
+    uint32_t result = 0;
+    uint8_t read;
+
+    do {
+        int res = this->read(&read);
+        if(res != 0) { return -1; }
+
+        result |= (uint32_t)(read & 0x7f) << numRead;
+        numRead += 7;
+
+        if(numRead > 35) {
+            return -2;
+        }
+    } while((read & 0x80) != 0);
+
+    *value = *((int32_t*)&result);
+    if(!mutate) {
+        this->read_ptr = old;
+        this->filled = true;
+    }
+
+    return numRead/7;
+}
+
+int RecvBuffer::readString(char** value) {
+    int32_t string_length;
+    int string_res = this->readVarInt(&string_length);
+    if(string_res < 0) { return string_res; }
+
+    *value = new char[string_length];
+    // *(*value + string_length - 1) = 0;
+
+    uint32_t u_string_length = *((uint32_t*)&string_length);
+    for(unsigned int i=0;i<u_string_length;i++) {
+        int read_res = this->read((uint8_t*)*value + i);
+        if(read_res != 0) { return read_res; }
+    }
+
+    return 0;
+}

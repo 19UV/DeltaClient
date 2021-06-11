@@ -1,4 +1,6 @@
 #include <iostream>
+#include <iomanip>
+
 #include <cstdint>
 #include <cstring>
 
@@ -10,8 +12,6 @@
 #include <SDL2/SDL_net.h>
 
 #include <thread>
-
-
 
 int main(int argc, char* argv[]) {
 	if(SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -62,16 +62,25 @@ int main(int argc, char* argv[]) {
 	result = SDLNet_TCP_Send(socket, packet2, packet2_size);
 	if(result < 0) { std::cout << "SEND ERROR" << std::endl; return 1; }
 
-	unsigned int amount_read = 0;
-	recv.recv(&amount_read);
-	std::cout << "Amount Read: " << amount_read << std::endl;
-
-	for(unsigned int i=0;i<amount_read;i++) {
-		uint8_t value;
-		int res = recv.read(&value);
-		if(res != 0) { std::cout << "READ ERROR" << std::endl; return 1; }
-		std::cout << value;
+	while(!recv.isFullPacket()) {
+		unsigned int amount_read = 0;
+		recv.recv(&amount_read);
+		std::cout << "Amount Received: " << amount_read << std::endl;
 	}
+
+	int32_t packet_length; int32_t packet_id;
+	result = recv.readVarInt(&packet_length);
+	if(result < 0) { std::cout << "Failed to get packet_length" << std::endl; }
+	result = recv.readVarInt(&packet_id);
+	if(result < 0) { std::cout << "Failed to get packet_id" << std::endl; }
+
+	char* motd;
+	result = recv.readString(&motd);
+	if(result != 0) { std::cout << "Failed to read motd" << std::endl; }
+
+	std::cout << "Packet Length: " << packet_length << std::endl;
+	std::cout << "Packet ID:     " << packet_id << std::endl;
+	std::cout << "Packet motd:   " << motd << std::endl;
 	
 	SDLNet_TCP_Close(socket);
 	

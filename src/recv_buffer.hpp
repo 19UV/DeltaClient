@@ -3,9 +3,12 @@
 
 #define RECV_BUFFER_ALLOCATE_FAILED 0
 
+#include <iostream>
+
 #include <new>
 
 #include <cstdint>
+#include <cstring>
 
 #include <SDL2/SDL_net.h>
 
@@ -21,7 +24,11 @@ public:
 	int getUsed();
 	int getFree();
 
+    bool isFullPacket();
 	int recv(unsigned int* amount_read);
+
+    int readVarInt(int32_t* value);
+    int readString(char** value);
 private:
 	uint8_t* buffer;
 	uint8_t* buffer_end;
@@ -33,6 +40,8 @@ private:
 	uint8_t* read_ptr;
 	
 	bool filled;
+
+	int readVarInt(int32_t* value, bool mutate);
 };
 
 #endif // RECV_BUFFER_HPP
