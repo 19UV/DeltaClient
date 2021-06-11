@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 	
 	RecvBuffer recv;
 	try {
-		recv = RecvBuffer(MAX_PACKET_SIZE, &socket);
+		recv = RecvBuffer(MAX_RECV_PACKET_SIZE, &socket);
 	} catch(int e) { // Failed to allocate memory
 		std::cout << "[ERROR] Failed to allocate recieve buffer" << std::endl;
 		return 1;
