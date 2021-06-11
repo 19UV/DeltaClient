@@ -1,10 +1,9 @@
 #ifndef RECV_BUFFER_HPP
 #define RECV_BUFFER_HPP
 
-#define RECV_BUFFER_ALLOCATE_FAILED 0
+#include "../configuration.h"
 
 #include <iostream>
-
 #include <new>
 
 #include <cstdint>
